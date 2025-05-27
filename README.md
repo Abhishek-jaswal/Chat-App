@@ -21,15 +21,17 @@ A full-stack real-time chat application built with:
 ---
 
 ## 🖼️ Screenshots
+![Incoming Call](./client/public/chatt.gif)
+
 
 ### 🗨️ Chat Interface  
-![Chat UI](./screenshots/chat-ui.png)
+![Incoming Call](./client/public/screenshot.jpeg)
 
-### 📞 Incoming Call Prompt  
-![Incoming Call](./screenshots/incoming-call.png)
+### Private Chat  
+![Incoming Call](./client/public/secondscreenshot.jpeg)
 
-### 🔴 Active Video Call  
-![Video Call](./screenshots/video-call.png)
+###  Group chat
+![Incoming Call](./client/public/thirdscreenshot.jpeg)
 
 ---
 

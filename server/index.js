@@ -46,30 +46,56 @@ io.on('connection', (socket) => {
       user1.emit('private-chat-started', { roomId, partner: to });
       user2.emit('private-chat-started', { roomId, partner: from });
     }
-    // WebRTC signaling: send offer
-socket.on('call-user', ({ offer, to }) => {
-  const target = findSocket(to);
-  if (target) {
-    target.emit('call-made', { offer, from: socket.username });
-  }
-});
+  });
 
-// WebRTC signaling: send answer
-socket.on('make-answer', ({ answer, to }) => {
-  const target = findSocket(to);
-  if (target) {
-    target.emit('answer-made', { answer, from: socket.username });
-  }
-});
+  // Video call signaling events
 
-// ICE candidate exchange
-socket.on('ice-candidate', ({ candidate, to }) => {
-  const target = findSocket(to);
-  if (target) {
-    target.emit('ice-candidate', { candidate });
-  }
-});
+  // Call request from caller to callee
+  socket.on('call-request', ({ to, from }) => {
+    const target = findSocket(to);
+    if (target) {
+      target.emit('call-request', { from });
+    }
+  });
 
+  // Callee accepts the call request
+  socket.on('call-accepted', ({ from, to }) => {
+    const target = findSocket(to);
+    if (target) {
+      target.emit('call-accepted', { from });
+    }
+  });
+
+  // Callee declines the call request
+  socket.on('call-declined', ({ from, to }) => {
+    const target = findSocket(to);
+    if (target) {
+      target.emit('call-declined', { from });
+    }
+  });
+
+  // WebRTC signaling: send offer
+  socket.on('call-user', ({ offer, to }) => {
+    const target = findSocket(to);
+    if (target) {
+      target.emit('call-made', { offer, from: socket.username });
+    }
+  });
+
+  // WebRTC signaling: send answer
+  socket.on('make-answer', ({ answer, to }) => {
+    const target = findSocket(to);
+    if (target) {
+      target.emit('answer-made', { answer, from: socket.username });
+    }
+  });
+
+  // ICE candidate exchange
+  socket.on('ice-candidate', ({ candidate, to }) => {
+    const target = findSocket(to);
+    if (target) {
+      target.emit('ice-candidate', { candidate });
+    }
   });
 
   // Private message handling
@@ -101,5 +127,4 @@ socket.on('ice-candidate', ({ candidate, to }) => {
 const PORT = process.env.PORT || 3001;
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ WebSocket Server running on http://0.0.0.0:${PORT}`);
-
 });

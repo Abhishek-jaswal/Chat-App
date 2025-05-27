@@ -74,6 +74,8 @@ io.on('connection', (socket) => {
   }
 });
 
-httpServer.listen(3001, () => {
-  console.log('✅ WebSocket Server running on http://localhost:3001');
+const PORT = process.env.PORT || 3001;
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ WebSocket Server running on http://0.0.0.0:${PORT}`);
+
 });

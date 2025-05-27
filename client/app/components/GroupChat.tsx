@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3001'); // Make sure your backend is running
+const socket = io('https://chat-app-k9pr.onrender.com'); // Make sure your backend is running
 
 export default function GroupChat({ username }: { username: string }) {
   const [message, setMessage] = useState('');

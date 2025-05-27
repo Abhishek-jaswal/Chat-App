@@ -46,6 +46,30 @@ io.on('connection', (socket) => {
       user1.emit('private-chat-started', { roomId, partner: to });
       user2.emit('private-chat-started', { roomId, partner: from });
     }
+    // WebRTC signaling: send offer
+socket.on('call-user', ({ offer, to }) => {
+  const target = findSocket(to);
+  if (target) {
+    target.emit('call-made', { offer, from: socket.username });
+  }
+});
+
+// WebRTC signaling: send answer
+socket.on('make-answer', ({ answer, to }) => {
+  const target = findSocket(to);
+  if (target) {
+    target.emit('answer-made', { answer, from: socket.username });
+  }
+});
+
+// ICE candidate exchange
+socket.on('ice-candidate', ({ candidate, to }) => {
+  const target = findSocket(to);
+  if (target) {
+    target.emit('ice-candidate', { candidate });
+  }
+});
+
   });
 
   // Private message handling

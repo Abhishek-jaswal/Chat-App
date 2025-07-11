@@ -46,7 +46,7 @@ export default function ChatApp() {
           
         </div>
         <Link href="/login" className="absolute bottom-1 text-white hover:underline">
-          Don't have an account? Register here
+          Don&apos;t have an account? Register here
         </Link>
       </main>
     );

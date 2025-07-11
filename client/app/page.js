@@ -23,7 +23,12 @@ export default function ChatApp() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gradient-to-bl from-black  to-teal-300 text-white pb-0 font-[family-name:var(--font-patrick-hand)]">
         <div className=" backdrop-blur-lg p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">Login To ChatApp</h1>
+          <h1 className="text-2xl font-bold text-white mb-2">
+            <span>
+              <Image src="/chatapp.png" alt="chat Logo" width={40} height={40} className="inline-block mr-2  rounded-full" />
+            </span>
+            Login To ChatApp
+          </h1>
           <p className="text-sm text-gray-200 mb-6">Sign in to continue.</p>
           <input type='text' placeholder='Enter your email' className='w-full p-2 rounded-xl mb-4 bg-white/8 text-white placeholder-gray-300 outline-gray-500' />
           <input type='password' placeholder='Enter your password' className='w-full p-2 rounded-xl mb-4 bg-white/8 text-white placeholder-gray-300 outline-gray-500' /> 
@@ -54,6 +59,11 @@ export default function ChatApp() {
 
   return (
     <main className="min-h-screen bg-gradient-to-bl from-black  to-teal-300  flex flex-col items-center justify-center px-4 text-white relative font-[family-name:var(--font-patrick-hand)]">
+     <div className="absolute top-4 left-4">
+      <span>
+              <Image src="/chatapp.png" alt="chat Logo" width={60} height={60} className="inline-block mr-2  rounded-full" />
+            </span>
+      </div>
       <div className="absolute top-4 right-4">
         <button
           onClick={() => signOut()}

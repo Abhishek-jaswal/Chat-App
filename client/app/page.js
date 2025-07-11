@@ -53,7 +53,7 @@ export default function ChatApp() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-bl from-black via-blue-900 to-teal-400 flex flex-col items-center justify-center px-4 text-white relative">
+    <main className="min-h-screen bg-gradient-to-bl from-black  to-teal-300  flex flex-col items-center justify-center px-4 text-white relative font-[family-name:var(--font-patrick-hand)]">
       <div className="absolute top-4 right-4">
         <button
           onClick={() => signOut()}

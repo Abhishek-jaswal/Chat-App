@@ -51,7 +51,7 @@ export default function PrivateChatRequest({ username }: { username: string }) {
   }
 
   return (
-    <div className="bg-white/10 p-6 rounded-2xl shadow-xl text-white w-full max-w-md text-center">
+    <div className="bg-white/10 p-6 rounded-2xl shadow-xl text-white w-full max-w-md text-center font-[family-name:var(--font-patrick-hand)]">
       <h2 className="text-2xl font-bold mb-4">Private Chat Requests</h2>
       <p className="mb-4">Online users:</p>
       <ul className="flex flex-col gap-3">

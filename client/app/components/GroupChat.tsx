@@ -32,7 +32,7 @@ export default function GroupChat({ username }: { username: string }) {
   };
 
   return (
-    <div className="w-full max-w-2xl h-[80vh] bg-white/10 p-6 rounded-2xl shadow-xl text-white flex flex-col">
+    <div className="w-full max-w-2xl h-[80vh] bg-white/10 p-6 rounded-2xl shadow-xl text-white flex flex-col font-[family-name:var(--font-patrick-hand)]">
       <h2 className="text-2xl font-bold mb-4 text-center">👥 Group Chat</h2>
 
       <div className="flex-1 overflow-y-auto mb-4 px-3 space-y-2 scrollbar-thin scrollbar-thumb-purple-600 scrollbar-track-transparent">

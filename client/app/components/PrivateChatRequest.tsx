@@ -1,53 +1,41 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import socket from '../socket';
 import PrivateChat from './PrivateChat';
-import { getContacts, Contact } from '../utils/chatStorage';
+import { getContacts, getUnread, Contact } from '../utils/chatStorage';
 
-const keyframes = `
-@keyframes fadeSlideUp { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
-@keyframes fadeIn      { from{opacity:0;} to{opacity:1;} }
-@keyframes ringPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.4);} 70%{box-shadow:0 0 0 10px rgba(20,184,166,0);} }
-@keyframes slideDown   { from{opacity:0;transform:translateY(-12px);} to{opacity:1;transform:translateY(0);} }
-@keyframes bounce      { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
-`;
-
-export default function PrivateChatRequest({ username, sessionFingerprint }: { username: string; sessionFingerprint: string }) {
+export default function PrivateChatRequest({
+  username,
+  sessionFingerprint,
+}: {
+  username: string;
+  sessionFingerprint: string;
+}) {
   const [users, setUsers] = useState<string[]>([]);
   const [roomId, setRoomId] = useState('');
   const [partner, setPartner] = useState('');
   const [requestFrom, setRequestFrom] = useState('');
   const [pendingTo, setPendingTo] = useState<string | null>(null);
   const [recentContacts, setRecentContacts] = useState<Contact[]>([]);
+  const [unread, setUnread] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<'online' | 'recent'>('online');
 
   useEffect(() => {
-    const contacts = getContacts(sessionFingerprint);
-    setRecentContacts(contacts);
+    setRecentContacts(getContacts(sessionFingerprint));
+    setUnread(getUnread(sessionFingerprint));
   }, [sessionFingerprint]);
 
   useEffect(() => {
     socket.emit('user-connected', username);
-
-    socket.on('users-list', (list: string[]) => {
-      setUsers(list.filter((u) => u !== username));
-    });
-    socket.on('chat-request', ({ from }: { from: string }) => {
-      setRequestFrom(from);
-    });
+    socket.on('users-list', (list: string[]) => setUsers(list.filter((u) => u !== username)));
+    socket.on('chat-request', ({ from }: { from: string }) => setRequestFrom(from));
     socket.on('private-chat-started', ({ roomId: r, partner: p }: { roomId: string; partner: string }) => {
       setRoomId(r); setPartner(p); setPendingTo(null);
     });
-
-    return () => {
-      socket.off('users-list');
-      socket.off('chat-request');
-      socket.off('private-chat-started');
-    };
+    return () => { socket.off('users-list'); socket.off('chat-request'); socket.off('private-chat-started'); };
   }, [username]);
 
-  const requestPrivateChat = (to: string) => {
+  const requestChat = (to: string) => {
     setPendingTo(to);
     socket.emit('private-chat-request', { to, from: username });
   };
@@ -57,39 +45,52 @@ export default function PrivateChatRequest({ username, sessionFingerprint }: { u
     setRequestFrom('');
   };
 
-  if (roomId) {
-    return <PrivateChat roomId={roomId} username={username} partner={partner} sessionFingerprint={sessionFingerprint} />;
-  }
+  if (roomId) return <PrivateChat roomId={roomId} username={username} partner={partner} sessionFingerprint={sessionFingerprint} />;
 
-  const avatarColor = (name: string) => {
-    const colors = ['#7c3aed', '#0891b2', '#db2777', '#d97706', '#16a34a', '#14b8a6'];
-    let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % colors.length;
-    return colors[h];
+  const avatarBg = (name: string) => {
+    const g = ['135deg,#8b5cf6,#6366f1', '135deg,#3b82f6,#2563eb', '135deg,#f43f5e,#e11d48', '135deg,#f59e0b,#d97706', '135deg,#10b981,#059669', '135deg,#14b8a6,#0891b2'];
+    let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % g.length;
+    return `linear-gradient(${g[h]})`;
   };
 
   return (
-    <div style={{ width: '100%', maxWidth: 480, padding: '0 16px', boxSizing: 'border-box' as const }}>
-      <style>{keyframes}</style>
+    <>
+      <style>{`
+        @keyframes fadeSlideUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+        @keyframes fadeIn      { from{opacity:0} to{opacity:1} }
+        @keyframes slideDown   { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:none} }
+        @keyframes ringPulse   { 0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.5)} 60%{box-shadow:0 0 0 12px rgba(20,184,166,0)} }
+        @keyframes slideUp     { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+        * { box-sizing:border-box; }
+        .user-row:hover { background: rgba(255,255,255,.06) !important; }
+        .chat-btn:hover:not(:disabled) { transform: scale(1.04); filter: brightness(1.1); }
+        ::-webkit-scrollbar { width:4px } ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+        @media (max-width:640px) {
+          .pcr-card { border-radius:0!important; width:100%!important; max-width:100%!important; }
+        }
+      `}</style>
 
-      {/* Incoming call modal */}
+      {/* Incoming chat request modal */}
       {requestFrom && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, animation: 'fadeIn .2s ease' }}>
-          <div style={{ background: 'rgba(15,20,30,.98)', border: '1px solid rgba(20,184,166,.3)', borderRadius: 24, padding: '32px', maxWidth: 320, width: '90%', textAlign: 'center' as const, boxShadow: '0 40px 80px rgba(0,0,0,.7)', animation: 'slideDown .3s ease' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: avatarColor(requestFrom), margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 700, color: '#fff', animation: 'ringPulse 1.5s ease infinite' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500, animation: 'fadeIn .2s ease', padding: 20 }}>
+          <div style={{ background: 'linear-gradient(145deg,#0f172a,#0c1524)', border: '1px solid rgba(20,184,166,.25)', borderRadius: 26, padding: '32px 28px', maxWidth: 340, width: '100%', textAlign: 'center', animation: 'slideUp .35s cubic-bezier(.22,1,.36,1)' }}>
+            <div style={{ width: 72, height: 72, borderRadius: 22, background: avatarBg(requestFrom), margin: '0 auto 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#fff', animation: 'ringPulse 2s ease infinite' }}>
               {requestFrom.charAt(0).toUpperCase()}
             </div>
-            <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '1.2rem', marginBottom: 6 }}>{requestFrom}</h3>
-            <p style={{ color: 'rgba(255,255,255,.5)', fontSize: '.88rem', marginBottom: 24 }}>wants to chat privately with you</p>
+            <h3 style={{ color: '#fff', fontWeight: 700, fontSize: '1.25rem', margin: '0 0 6px' }}>{requestFrom}</h3>
+            <p style={{ color: 'rgba(255,255,255,.45)', fontSize: '.88rem', margin: '0 0 26px', lineHeight: 1.5 }}>
+              wants to start a private conversation with you
+            </p>
             <div style={{ display: 'flex', gap: 12 }}>
               <button
                 onClick={() => setRequestFrom('')}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 14, background: 'rgba(239,68,68,.15)', border: '1px solid rgba(239,68,68,.3)', color: '#f87171', fontWeight: 700, cursor: 'pointer', fontSize: '.95rem' }}
+                style={{ flex: 1, padding: '13px 0', borderRadius: 14, background: 'rgba(239,68,68,.12)', border: '1px solid rgba(239,68,68,.3)', color: '#fca5a5', fontWeight: 700, cursor: 'pointer', fontSize: '.95rem', fontFamily: 'inherit' }}
               >
                 ✕ Decline
               </button>
               <button
                 onClick={acceptRequest}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 14, background: 'linear-gradient(135deg,#14b8a6,#0891b2)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '.95rem', boxShadow: '0 4px 16px rgba(20,184,166,.35)' }}
+                style={{ flex: 1, padding: '13px 0', borderRadius: 14, background: 'linear-gradient(135deg,#14b8a6,#0891b2)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '.95rem', fontFamily: 'inherit', boxShadow: '0 6px 20px rgba(20,184,166,.4)' }}
               >
                 ✓ Accept
               </button>
@@ -98,103 +99,141 @@ export default function PrivateChatRequest({ username, sessionFingerprint }: { u
         </div>
       )}
 
-      {/* Main Card */}
-      <div style={{ background: 'rgba(255,255,255,.04)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 24, overflow: 'hidden', animation: 'fadeSlideUp .4s ease' }}>
+      {/* Main card */}
+      <div className="pcr-card" style={{ width: '100%', maxWidth: 480, background: 'rgba(255,255,255,.025)', backdropFilter: 'blur(20px)', borderRadius: 24, border: '1px solid rgba(255,255,255,.07)', overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,.4)', animation: 'fadeSlideUp .4s ease' }}>
+
         {/* Header */}
-        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-          <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '1.2rem', margin: 0, marginBottom: 4 }}>Private Chat</h2>
-          <p style={{ color: 'rgba(255,255,255,.4)', fontSize: '.83rem', margin: 0 }}>
-            Chatting as <strong style={{ color: '#14b8a6' }}>{username}</strong>
+        <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.03)' }}>
+          <h2 style={{ color: '#fff', fontWeight: 700, fontSize: '1.15rem', margin: '0 0 2px' }}>Private Chat</h2>
+          <p style={{ color: 'rgba(255,255,255,.38)', fontSize: '.8rem', margin: 0 }}>
+            You are <strong style={{ color: '#14b8a6' }}>{username}</strong>
           </p>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
-          {(['online', 'recent'] as const).map(tab => (
+          {(['online', 'recent'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              style={{ flex: 1, padding: '12px 0', background: 'none', border: 'none', color: activeTab === tab ? '#14b8a6' : 'rgba(255,255,255,.4)', fontWeight: activeTab === tab ? 700 : 400, fontSize: '.88rem', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid #14b8a6' : '2px solid transparent', transition: 'all .2s', fontFamily: 'inherit' }}
+              style={{
+                flex: 1, padding: '12px 0', background: 'none', border: 'none',
+                color: activeTab === tab ? '#14b8a6' : 'rgba(255,255,255,.38)',
+                fontWeight: activeTab === tab ? 700 : 400,
+                fontSize: '.85rem', cursor: 'pointer', fontFamily: 'inherit',
+                borderBottom: activeTab === tab ? '2px solid #14b8a6' : '2px solid transparent',
+                transition: 'all .2s',
+              }}
             >
               {tab === 'online' ? `🟢 Online (${users.length})` : `🕐 Recent (${recentContacts.length})`}
             </button>
           ))}
         </div>
 
-        {/* User List */}
-        <div style={{ minHeight: 200, maxHeight: '55vh', overflowY: 'auto' }}>
+        {/* List */}
+        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           {activeTab === 'online' && (
-            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {users.length === 0 ? (
-                <div style={{ textAlign: 'center' as const, padding: '40px 20px', color: 'rgba(255,255,255,.3)' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>😶</div>
-                  <p style={{ fontSize: '.88rem' }}>No other users online yet</p>
+                <div style={{ textAlign: 'center', padding: '44px 20px', color: 'rgba(255,255,255,.25)', animation: 'fadeIn .4s ease' }}>
+                  <div style={{ fontSize: '2.8rem', marginBottom: 10 }}>👀</div>
+                  <p style={{ margin: 0, fontSize: '.88rem' }}>No other users online right now</p>
                 </div>
-              ) : users.map((user, i) => (
-                <div key={user} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 14, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', animation: `fadeSlideUp .3s ease ${i * .05}s both`, transition: 'background .2s' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: avatarColor(user), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1rem', color: '#fff', position: 'relative' }}>
-                      {user.charAt(0).toUpperCase()}
-                      <div style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: '#22c55e', border: '2px solid rgba(15,20,30,1)' }} />
-                    </div>
-                    <div>
-                      <div style={{ color: '#fff', fontWeight: 600, fontSize: '.95rem' }}>{user}</div>
-                      <div style={{ color: 'rgba(255,255,255,.4)', fontSize: '.73rem' }}>Available to chat</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => requestPrivateChat(user)}
-                    disabled={pendingTo === user}
-                    style={{ padding: '8px 16px', borderRadius: 10, background: pendingTo === user ? 'rgba(255,255,255,.06)' : 'linear-gradient(135deg,#14b8a6,#0891b2)', border: 'none', color: '#fff', fontWeight: 700, fontSize: '.82rem', cursor: pendingTo === user ? 'default' : 'pointer', transition: 'all .2s', opacity: pendingTo === user ? .6 : 1 }}
+              ) : (
+                users.map((user, i) => (
+                  <div
+                    key={user}
+                    className="user-row"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderRadius: 14, background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', transition: 'background .18s', animation: `fadeSlideUp .3s ease ${i * .05}s both`, gap: 10 }}
                   >
-                    {pendingTo === user ? 'Pending…' : 'Chat →'}
-                  </button>
-                </div>
-              ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: avatarBg(user), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1rem', color: '#fff' }}>
+                          {user.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: '#22c55e', border: '2.5px solid rgba(10,14,25,1)' }} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: '#fff', fontWeight: 600, fontSize: '.93rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user}</div>
+                        <div style={{ color: 'rgba(255,255,255,.35)', fontSize: '.72rem' }}>Available</div>
+                      </div>
+                    </div>
+                    <button
+                      className="chat-btn"
+                      onClick={() => requestChat(user)}
+                      disabled={!!pendingTo}
+                      style={{
+                        padding: '8px 16px', borderRadius: 10, border: 'none',
+                        background: pendingTo === user ? 'rgba(255,255,255,.06)' : 'linear-gradient(135deg,#14b8a6,#0891b2)',
+                        color: '#fff', fontWeight: 700, fontSize: '.8rem', cursor: pendingTo ? 'default' : 'pointer',
+                        transition: 'all .2s', flexShrink: 0, fontFamily: 'inherit',
+                        opacity: pendingTo && pendingTo !== user ? .45 : 1,
+                      }}
+                    >
+                      {pendingTo === user ? '⏳' : 'Chat →'}
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
           {activeTab === 'recent' && (
-            <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {recentContacts.length === 0 ? (
-                <div style={{ textAlign: 'center' as const, padding: '40px 20px', color: 'rgba(255,255,255,.3)' }}>
-                  <div style={{ fontSize: '2rem', marginBottom: 8 }}>📭</div>
-                  <p style={{ fontSize: '.88rem' }}>No recent chats yet</p>
+                <div style={{ textAlign: 'center', padding: '44px 20px', color: 'rgba(255,255,255,.25)', animation: 'fadeIn .4s ease' }}>
+                  <div style={{ fontSize: '2.8rem', marginBottom: 10 }}>📭</div>
+                  <p style={{ margin: 0, fontSize: '.88rem' }}>No recent conversations yet</p>
                 </div>
-              ) : recentContacts.map((contact, i) => {
-                const isOnline = users.includes(contact.username);
-                return (
-                  <div key={contact.username} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: 14, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)', animation: `fadeSlideUp .3s ease ${i * .05}s both` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: avatarColor(contact.username), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1rem', color: '#fff', position: 'relative' }}>
-                        {contact.username.charAt(0).toUpperCase()}
-                        <div style={{ position: 'absolute', bottom: 1, right: 1, width: 10, height: 10, borderRadius: '50%', background: isOnline ? '#22c55e' : '#6b7280', border: '2px solid rgba(15,20,30,1)' }} />
-                      </div>
-                      <div>
-                        <div style={{ color: '#fff', fontWeight: 600, fontSize: '.95rem' }}>{contact.username}</div>
-                        <div style={{ color: 'rgba(255,255,255,.35)', fontSize: '.72rem' }}>
-                          {isOnline ? 'Online now' : `Last seen ${new Date(contact.lastSeen).toLocaleDateString()}`}
+              ) : (
+                recentContacts.map((c, i) => {
+                  const isOnline = users.includes(c.username);
+                  const unreadCount = c.roomId ? (unread[c.roomId] || 0) : 0;
+                  return (
+                    <div
+                      key={c.username}
+                      className="user-row"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderRadius: 14, background: 'rgba(255,255,255,.035)', border: '1px solid rgba(255,255,255,.06)', transition: 'background .18s', animation: `fadeSlideUp .3s ease ${i * .05}s both`, gap: 10 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0, flex: 1 }}>
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 12, background: avatarBg(c.username), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1rem', color: '#fff' }}>
+                            {c.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ position: 'absolute', bottom: 0, right: 0, width: 11, height: 11, borderRadius: '50%', background: isOnline ? '#22c55e' : '#4b5563', border: '2.5px solid rgba(10,14,25,1)' }} />
+                          {unreadCount > 0 && (
+                            <div style={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: '#f43f5e', fontSize: '.62rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(10,14,25,1)' }}>
+                              {unreadCount > 9 ? '9+' : unreadCount}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: '#fff', fontWeight: 600, fontSize: '.93rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.username}</div>
+                          <div style={{ color: 'rgba(255,255,255,.3)', fontSize: '.71rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {c.lastMessage ? c.lastMessage : isOnline ? 'Online now' : `Last seen ${new Date(c.lastSeen).toLocaleDateString()}`}
+                          </div>
                         </div>
                       </div>
+                      {isOnline ? (
+                        <button
+                          className="chat-btn"
+                          onClick={() => requestChat(c.username)}
+                          disabled={!!pendingTo}
+                          style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: pendingTo === c.username ? 'rgba(255,255,255,.06)' : 'linear-gradient(135deg,#14b8a6,#0891b2)', color: '#fff', fontWeight: 700, fontSize: '.8rem', cursor: pendingTo ? 'default' : 'pointer', transition: 'all .2s', flexShrink: 0, fontFamily: 'inherit', opacity: pendingTo && pendingTo !== c.username ? .45 : 1 }}
+                        >
+                          {pendingTo === c.username ? '⏳' : 'Chat →'}
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.28)', padding: '5px 10px', borderRadius: 8, background: 'rgba(255,255,255,.05)', flexShrink: 0 }}>Offline</span>
+                      )}
                     </div>
-                    {isOnline ? (
-                      <button
-                        onClick={() => requestPrivateChat(contact.username)}
-                        disabled={pendingTo === contact.username}
-                        style={{ padding: '8px 14px', borderRadius: 10, background: pendingTo === contact.username ? 'rgba(255,255,255,.06)' : 'linear-gradient(135deg,#14b8a6,#0891b2)', border: 'none', color: '#fff', fontWeight: 700, fontSize: '.8rem', cursor: 'pointer' }}
-                      >
-                        {pendingTo === contact.username ? 'Pending…' : 'Chat →'}
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.3)', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,.05)' }}>Offline</span>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }

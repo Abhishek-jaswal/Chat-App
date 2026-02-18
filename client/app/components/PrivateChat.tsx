@@ -22,8 +22,8 @@ export default function PrivateChat({
   const [isTyping, setIsTyping] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeout = useRef<NodeJS.Timeout>();
-  const partnerTypingTimeout = useRef<NodeJS.Timeout>();
+  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const partnerTypingTimeout = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   /* ── Save contact ── */

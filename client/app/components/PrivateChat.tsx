@@ -132,7 +132,7 @@ export default function PrivateChat({
         </div>
       )}
 
-      <div className="pc-wrap" style={{ width: '100%', maxWidth: 760, height: 'calc(100dvh - 72px)', display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,.025)', backdropFilter: 'blur(20px)', borderRadius: 24, border: '1px solid rgba(255,255,255,.07)', overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,.4)' }}>
+      <div className="pc-wrap" style={{ width: '100%', maxWidth: 700, height: 'calc(100dvh - 72px)', display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,.025)', backdropFilter: 'blur(20px)', padding: '100px', borderRadius: 24, border: '1px solid rgba(255,255,255,.07)', overflow: 'hidden', boxShadow: '0 40px 80px rgba(0,0,0,.4)' }}>
 
         {/* Header */}
         <div className="pc-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'rgba(255,255,255,.04)', borderBottom: '1px solid rgba(255,255,255,.07)', flexShrink: 0, gap: 10 }}>

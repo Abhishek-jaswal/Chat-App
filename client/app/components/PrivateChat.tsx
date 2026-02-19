@@ -1,4 +1,7 @@
+/// This component implements the private chat interface between two users, including message display, typing indicators, and message storage on the client side. It uses the useNotifications hook to send PWA notifications when a new message arrives and the tab is not in focus. Messages are stored in localStorage and are only visible on the user's device, ensuring privacy. The component also includes a modal for clearing chat history and a button for initiating video calls (handled by the VideoCall component).
+
 'use client';
+// PrivateChat.tsx — Main private chat interface component
 import { useEffect, useRef, useState, useCallback } from 'react';
 import socket from '../socket';
 import VideoCall from './VideoCall';
@@ -110,7 +113,7 @@ export default function PrivateChat({
       `}</style>
 
       {toast && (
-        <div style={{ position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)', background: 'rgba(139,92,246,.9)', color: '#fff', padding: '10px 20px', borderRadius: 12, fontSize: '.88rem', fontWeight: 600, zIndex: 999, animation: 'toastIn .3s ease', whiteSpace: 'nowrap' }}>
+        <div style={{ position: 'fixed', bottom: 100, left: '50%', transform: 'translateX(-50%)', background: 'rgba(139,92,246,.9)', color: '#fff', padding: '10px 20px', borderRadius: 12, top: 100, fontSize: '.88rem', fontWeight: 600, zIndex: 999, animation: 'toastIn .3s ease', whiteSpace: 'nowrap' }}>
           {toast}
         </div>
       )}
